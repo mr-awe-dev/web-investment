@@ -1,0 +1,22 @@
+{
+  "summary": "Black-box smoke test of Personal Finance monolith. Backend (Spring Boot @ :8090) and frontend (vite preview @ :4173) already running. 25 pytest cases cover auth, account/transfer + balance-sheet balance invariant, buy/sell investment with FIFO lot tracking + realized/unrealized P/L + journal double-entry, validation error codes, void-transaction restores lots, and demo user reports incl. CSV export. Playwright covers login (autofill demo creds), dashboard, transactions list + detail drawer with 'Dampak akuntansi (jurnal)', portfolio, balance-sheet and budget pages. Everything passes.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": { "ui_bugs": [], "integration_issues": [], "design_issues": [] },
+  "test_report_links": [
+    "/app/personal-finance-app/tests/backend_test.py",
+    "/app/test_reports/pytest/pf_smoke.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Error envelope in the backend is flat: {success:false, code, message, timestamp} — not nested under an 'error' object. That is consistent across INVALID_CREDENTIALS / INSUFFICIENT_STOCK / DESTINATION_REQUIRED / NOT_FOUND. It differs from the shape hinted at in the review request ('error.code'); worth documenting in README so client integrations don't rely on the wrong path.",
+    "GET /api/portfolio returns aggregate at root ({totalCost, marketValue, unrealizedPl, unrealizedPlPercent, realizedPl, positions:[...]}) with per-holding stats inside 'positions[]' keyed by asset id (no explicit 'assetId' field — the id IS the asset id). Documenting the response shape would help API consumers.",
+    "Transaction detail response nests the transaction under data.transaction (with 'journalEntries', 'lotConsumptions' siblings). Status/type live inside data.transaction — worth calling out."
+  ],
+  "updated_files": ["/app/personal-finance-app/tests/backend_test.py"],
+  "success_rate": { "backend": "100% (25/25)", "frontend": "100% (all target pages render, autofill works, Masuk logs in, drawer opens with journal table)" },
+  "test_credentials": "demo@finance.id / Demo1234! (from review request; /app/memory/test_credentials.md not present)",
+  "seed_data_creation": "Registered ephemeral users via /api/auth/register per test session for the full accounting flow; demo data left untouched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend & frontend for this task live under /app/personal-finance-app (NOT /app/backend or /app/frontend). Backend on http://localhost:8090, frontend on http://localhost:4173. Pytest file at /app/personal-finance-app/tests/backend_test.py, JUnit at /app/test_reports/pytest/pf_smoke.xml. Error envelope is flat (root-level 'code'), portfolio uses 'positions[]', transaction detail nests under 'data.transaction'."
+}
