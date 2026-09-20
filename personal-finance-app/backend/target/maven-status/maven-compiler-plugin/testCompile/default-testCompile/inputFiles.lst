@@ -1,0 +1,7 @@
+/app/personal-finance-app/backend/src/test/java/com/example/personalfinance/api/AtomicityTest.java
+/app/personal-finance-app/backend/src/test/java/com/example/personalfinance/api/AuthApiTest.java
+/app/personal-finance-app/backend/src/test/java/com/example/personalfinance/api/PlanningApiTest.java
+/app/personal-finance-app/backend/src/test/java/com/example/personalfinance/api/TransactionFlowTest.java
+/app/personal-finance-app/backend/src/test/java/com/example/personalfinance/domain/CostBasisEngineTest.java
+/app/personal-finance-app/backend/src/test/java/com/example/personalfinance/domain/DomainRulesTest.java
+/app/personal-finance-app/backend/src/test/java/com/example/personalfinance/support/ApiTestBase.java

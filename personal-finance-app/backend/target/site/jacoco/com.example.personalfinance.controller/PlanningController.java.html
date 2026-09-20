@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlanningController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Personal Finance Backend</a> &gt; <a href="index.source.html" class="el_package">com.example.personalfinance.controller</a> &gt; <span class="el_source">PlanningController.java</span></div><h1>PlanningController.java</h1><pre class="source lang-java linenums">package com.example.personalfinance.controller;
+
+import com.example.personalfinance.dto.request.BudgetRequest;
+import com.example.personalfinance.dto.request.ReconciliationRequest;
+import com.example.personalfinance.dto.response.ApiResponse;
+import com.example.personalfinance.dto.response.BudgetResponse;
+import com.example.personalfinance.dto.response.ReconciliationResponse;
+import com.example.personalfinance.security.UserPrincipal;
+import com.example.personalfinance.service.BudgetService;
+import com.example.personalfinance.service.ReconciliationService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/** Planning (budgets) and reconciliation. */
+@RestController
+@RequestMapping(&quot;/api&quot;)
+@RequiredArgsConstructor
+public class PlanningController {
+
+    private final BudgetService budgets;
+    private final ReconciliationService reconciliations;
+
+    @GetMapping(&quot;/budgets&quot;)
+    public ApiResponse&lt;List&lt;BudgetResponse&gt;&gt; budgets(@AuthenticationPrincipal UserPrincipal p, @RequestParam String period) {
+<span class="fc" id="L30">        return ApiResponse.ok(budgets.list(p.user(), period));</span>
+    }
+
+    @PostMapping(&quot;/budgets&quot;)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse&lt;BudgetResponse&gt; upsert(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody BudgetRequest req) {
+<span class="fc" id="L36">        return ApiResponse.ok(budgets.upsert(p.user(), req));</span>
+    }
+
+    @DeleteMapping(&quot;/budgets/{id}&quot;)
+    public ApiResponse&lt;Void&gt; deleteBudget(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id) {
+<span class="fc" id="L41">        budgets.delete(p.user(), id);</span>
+<span class="fc" id="L42">        return ApiResponse.ok(null);</span>
+    }
+
+    @GetMapping(&quot;/reconciliations&quot;)
+    public ApiResponse&lt;List&lt;ReconciliationResponse&gt;&gt; reconciliations(@AuthenticationPrincipal UserPrincipal p) {
+<span class="fc" id="L47">        return ApiResponse.ok(reconciliations.list(p.user()));</span>
+    }
+
+    @PostMapping(&quot;/reconciliations&quot;)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse&lt;ReconciliationResponse&gt; reconcile(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody ReconciliationRequest req) {
+<span class="fc" id="L53">        return ApiResponse.ok(reconciliations.create(p.user(), req));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

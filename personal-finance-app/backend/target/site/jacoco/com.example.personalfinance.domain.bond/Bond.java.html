@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Bond.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Personal Finance Backend</a> &gt; <a href="index.source.html" class="el_package">com.example.personalfinance.domain.bond</a> &gt; <span class="el_source">Bond.java</span></div><h1>Bond.java</h1><pre class="source lang-java linenums">package com.example.personalfinance.domain.bond;
+
+import com.example.personalfinance.domain.asset.Asset;
+import com.example.personalfinance.domain.common.BaseEntity;
+import com.example.personalfinance.domain.common.Money;
+import com.example.personalfinance.domain.user.User;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Bond terms attached to a BOND asset. The coupon schedule is derived, never stored. */
+@Getter
+@Setter
+@Entity
+@Table(name = &quot;bonds&quot;)
+<span class="fc" id="L22">public class Bond extends BaseEntity {</span>
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = &quot;user_id&quot;)
+    private User user;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = &quot;asset_id&quot;, unique = true)
+    private Asset asset;
+
+    @Column(length = 160)
+    private String issuer;
+
+    @Column(length = 40)
+    private String bondType;
+
+    @Column(nullable = false, precision = 20, scale = 2)
+    private BigDecimal nominalValue;
+
+    /** Annual coupon rate in percent. */
+    @Column(nullable = false, precision = 8, scale = 4)
+    private BigDecimal couponRate;
+
+    /** Withholding tax on coupons in percent. */
+<span class="fc" id="L45">    @Column(nullable = false, precision = 8, scale = 4)</span>
+    private BigDecimal taxRate = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 15)
+    private CouponFrequency frequency;
+
+    @Column(nullable = false)
+    private LocalDate settlementDate;
+
+    @Column(nullable = false)
+    private LocalDate maturityDate;
+
+    /** One scheduled coupon. */
+<span class="fc" id="L59">    public record CouponItem(LocalDate paymentDate, BigDecimal gross, BigDecimal tax, BigDecimal net, String status) {}</span>
+
+    /** Generates the coupon schedule from settlement (exclusive) to maturity (inclusive); status relative to {@code today}. */
+    public List&lt;CouponItem&gt; schedule(LocalDate today) {
+<span class="fc" id="L63">        BigDecimal hundred = BigDecimal.valueOf(100);</span>
+<span class="fc" id="L64">        BigDecimal gross = nominalValue.multiply(couponRate).divide(hundred.multiply(BigDecimal.valueOf(frequency.perYear())), 2, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L65">        BigDecimal tax = Money.of(gross.multiply(taxRate).divide(hundred, 2, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L66">        List&lt;CouponItem&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (LocalDate d = settlementDate.plusMonths(frequency.months()); !d.isAfter(maturityDate); d = d.plusMonths(frequency.months())) {</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">            items.add(new CouponItem(d, gross, tax, gross.subtract(tax), d.isAfter(today) ? &quot;UPCOMING&quot; : &quot;PAID&quot;));</span>
+        }
+<span class="fc" id="L70">        return items;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

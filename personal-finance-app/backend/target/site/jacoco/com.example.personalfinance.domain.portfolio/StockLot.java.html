@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StockLot.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Personal Finance Backend</a> &gt; <a href="index.source.html" class="el_package">com.example.personalfinance.domain.portfolio</a> &gt; <span class="el_source">StockLot.java</span></div><h1>StockLot.java</h1><pre class="source lang-java linenums">package com.example.personalfinance.domain.portfolio;
+
+import com.example.personalfinance.domain.asset.Asset;
+import com.example.personalfinance.domain.common.BaseEntity;
+import com.example.personalfinance.domain.transaction.Transaction;
+import com.example.personalfinance.domain.user.User;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/** A purchase lot. Remaining quantity/cost shrink as disposals consume it (FIFO / average / specific). */
+@Getter
+@Setter
+@Entity
+@Table(name = &quot;stock_lots&quot;)
+<span class="fc" id="L19">public class StockLot extends BaseEntity {</span>
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = &quot;user_id&quot;)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = &quot;asset_id&quot;)
+    private Asset asset;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = &quot;transaction_id&quot;, unique = true)
+    private Transaction transaction;
+
+    @Column(nullable = false)
+    private LocalDate purchaseDate;
+
+    @Column(nullable = false, precision = 20, scale = 6)
+    private BigDecimal quantity;
+
+    @Column(nullable = false, precision = 20, scale = 6)
+    private BigDecimal remainingQuantity;
+
+    /** Total acquisition cost including capitalised fees, original currency. */
+    @Column(nullable = false, precision = 20, scale = 2)
+    private BigDecimal totalCost;
+
+    @Column(nullable = false, precision = 20, scale = 2)
+    private BigDecimal remainingCost;
+
+<span class="fc" id="L48">    @Enumerated(EnumType.STRING)</span>
+    @Column(nullable = false, length = 10)
+    private LotStatus status = LotStatus.OPEN;
+
+    /** Cost per unit of the original purchase. */
+    public BigDecimal unitCost() {
+<span class="fc" id="L54">        return totalCost.divide(quantity, 6, java.math.RoundingMode.HALF_UP);</span>
+    }
+
+    /** Reduces remaining quantity/cost and refreshes status. */
+    public void consume(BigDecimal qty, BigDecimal cost) {
+<span class="fc" id="L59">        remainingQuantity = remainingQuantity.subtract(qty);</span>
+<span class="fc" id="L60">        remainingCost = remainingCost.subtract(cost);</span>
+<span class="fc" id="L61">        refreshStatus();</span>
+<span class="fc" id="L62">    }</span>
+
+    /** Reverses a consumption (used when a sale is voided). */
+    public void restore(BigDecimal qty, BigDecimal cost) {
+<span class="fc" id="L66">        remainingQuantity = remainingQuantity.add(qty);</span>
+<span class="fc" id="L67">        remainingCost = remainingCost.add(cost);</span>
+<span class="fc" id="L68">        refreshStatus();</span>
+<span class="fc" id="L69">    }</span>
+
+    private void refreshStatus() {
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (remainingQuantity.signum() == 0) status = LotStatus.CLOSED;</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        else if (remainingQuantity.compareTo(quantity) &lt; 0) status = LotStatus.PARTIAL;</span>
+<span class="fc" id="L74">        else status = LotStatus.OPEN;</span>
+<span class="fc" id="L75">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

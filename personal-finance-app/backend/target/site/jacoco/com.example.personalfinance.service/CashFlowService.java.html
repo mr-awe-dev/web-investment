@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CashFlowService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Personal Finance Backend</a> &gt; <a href="index.source.html" class="el_package">com.example.personalfinance.service</a> &gt; <span class="el_source">CashFlowService.java</span></div><h1>CashFlowService.java</h1><pre class="source lang-java linenums">package com.example.personalfinance.service;
+
+import com.example.personalfinance.domain.cashflow.CashFlowCategory;
+import com.example.personalfinance.domain.common.Money;
+import com.example.personalfinance.domain.user.User;
+import com.example.personalfinance.dto.response.CashFlowResponse;
+import com.example.personalfinance.repository.JournalEntryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+/** Cash-flow statement derived from journal entries on cash accounts, classified by transaction type. */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class CashFlowService {
+
+    private final JournalEntryRepository entries;
+
+    public CashFlowResponse statement(User user, LocalDate from, LocalDate to) {
+<span class="fc" id="L25">        List&lt;CashFlowResponse.Line&gt; lines = entries.cashFlows(user.getId(), from, to).stream()</span>
+<span class="fc" id="L26">                .map(r -&gt; new CashFlowResponse.Line(r.type().cashFlowCategory(), r.type(), Money.of(r.amount())))</span>
+<span class="fc" id="L27">                .sorted((a, b) -&gt; a.type().compareTo(b.type())).toList();</span>
+<span class="fc" id="L28">        BigDecimal operating = sum(lines, CashFlowCategory.OPERATING);</span>
+<span class="fc" id="L29">        BigDecimal investing = sum(lines, CashFlowCategory.INVESTING);</span>
+<span class="fc" id="L30">        BigDecimal financing = sum(lines, CashFlowCategory.FINANCING);</span>
+<span class="fc" id="L31">        return new CashFlowResponse(from, to, operating, investing, financing, operating.add(investing).add(financing), lines);</span>
+    }
+
+    private static BigDecimal sum(List&lt;CashFlowResponse.Line&gt; lines, CashFlowCategory c) {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        return lines.stream().filter(l -&gt; l.category() == c).map(CashFlowResponse.Line::amount).reduce(Money.ZERO, BigDecimal::add);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

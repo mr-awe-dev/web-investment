@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PortfolioController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Personal Finance Backend</a> &gt; <a href="index.source.html" class="el_package">com.example.personalfinance.controller</a> &gt; <span class="el_source">PortfolioController.java</span></div><h1>PortfolioController.java</h1><pre class="source lang-java linenums">package com.example.personalfinance.controller;
+
+import com.example.personalfinance.domain.transaction.TransactionType;
+import com.example.personalfinance.dto.request.AssetRequest;
+import com.example.personalfinance.dto.request.PriceUpdateRequest;
+import com.example.personalfinance.dto.request.TransactionRequest;
+import com.example.personalfinance.dto.response.*;
+import com.example.personalfinance.exception.BusinessException;
+import com.example.personalfinance.security.UserPrincipal;
+import com.example.personalfinance.service.AssetService;
+import com.example.personalfinance.service.PortfolioService;
+import com.example.personalfinance.service.ReportService;
+import com.example.personalfinance.service.TransactionService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/** Assets, portfolio positions/lots, stock buy/sell shortcuts and dividend history. */
+@RestController
+@RequestMapping(&quot;/api&quot;)
+@RequiredArgsConstructor
+public class PortfolioController {
+
+    private final AssetService assets;
+    private final PortfolioService portfolio;
+    private final TransactionService transactions;
+    private final ReportService reports;
+
+    @GetMapping(&quot;/assets&quot;)
+<span class="fc" id="L34">    public ApiResponse&lt;List&lt;AssetResponse&gt;&gt; assets(@AuthenticationPrincipal UserPrincipal p) { return ApiResponse.ok(assets.list(p.user())); }</span>
+
+    @PostMapping(&quot;/assets&quot;)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse&lt;AssetResponse&gt; createAsset(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody AssetRequest req) {
+<span class="fc" id="L39">        return ApiResponse.ok(assets.create(p.user(), req));</span>
+    }
+
+    @GetMapping(&quot;/assets/{id}&quot;)
+<span class="fc" id="L43">    public ApiResponse&lt;AssetResponse&gt; asset(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id) { return ApiResponse.ok(assets.get(p.user(), id)); }</span>
+
+    @PutMapping(&quot;/assets/{id}/price&quot;)
+    public ApiResponse&lt;AssetResponse&gt; price(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id, @Valid @RequestBody PriceUpdateRequest req) {
+<span class="fc" id="L47">        return ApiResponse.ok(assets.updatePrice(p.user(), id, req));</span>
+    }
+
+    @GetMapping(&quot;/portfolio&quot;)
+<span class="fc" id="L51">    public ApiResponse&lt;PortfolioResponse&gt; portfolio(@AuthenticationPrincipal UserPrincipal p) { return ApiResponse.ok(portfolio.portfolio(p.user())); }</span>
+
+    @GetMapping(&quot;/portfolio/positions&quot;)
+<span class="fc" id="L54">    public ApiResponse&lt;List&lt;AssetResponse&gt;&gt; positions(@AuthenticationPrincipal UserPrincipal p) { return ApiResponse.ok(portfolio.positions(p.user(), true)); }</span>
+
+    @GetMapping(&quot;/portfolio/lots&quot;)
+    public ApiResponse&lt;List&lt;StockLotResponse&gt;&gt; lots(@AuthenticationPrincipal UserPrincipal p, @RequestParam(required = false) Long assetId) {
+<span class="fc" id="L58">        return ApiResponse.ok(portfolio.lots(p.user(), assetId));</span>
+    }
+
+    @GetMapping(&quot;/stocks&quot;)
+    public ApiResponse&lt;List&lt;AssetResponse&gt;&gt; stocks(@AuthenticationPrincipal UserPrincipal p) {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        return ApiResponse.ok(assets.list(p.user()).stream().filter(a -&gt; a.assetType() == com.example.personalfinance.domain.asset.AssetType.STOCK).toList());</span>
+    }
+
+    @PostMapping(&quot;/stocks/buy&quot;)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse&lt;TransactionDetailResponse&gt; buy(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody TransactionRequest req) {
+<span class="fc" id="L69">        return ApiResponse.ok(transactions.create(p.user(), typed(req, TransactionType.BUY_INVESTMENT)));</span>
+    }
+
+    @PostMapping(&quot;/stocks/sell&quot;)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse&lt;TransactionDetailResponse&gt; sell(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody TransactionRequest req) {
+<span class="fc" id="L75">        return ApiResponse.ok(transactions.create(p.user(), typed(req, TransactionType.SELL_INVESTMENT)));</span>
+    }
+
+    @GetMapping(&quot;/dividends&quot;)
+    public ApiResponse&lt;List&lt;TransactionResponse&gt;&gt; dividends(@AuthenticationPrincipal UserPrincipal p) {
+<span class="fc" id="L80">        return ApiResponse.ok(reports.history(p.user(), TransactionType.DIVIDEND));</span>
+    }
+
+    @PostMapping(&quot;/dividends&quot;)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse&lt;TransactionDetailResponse&gt; dividend(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody TransactionRequest req) {
+<span class="fc" id="L86">        return ApiResponse.ok(transactions.create(p.user(), typed(req, TransactionType.DIVIDEND)));</span>
+    }
+
+    /** Shortcut endpoints must carry the type they stand for. */
+    private static TransactionRequest typed(TransactionRequest r, TransactionType expected) {
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (r.type() != expected) throw new BusinessException(&quot;TYPE_MISMATCH&quot;, &quot;Tipe transaksi harus &quot; + expected);</span>
+<span class="fc" id="L92">        return r;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DtoMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Personal Finance Backend</a> &gt; <a href="index.source.html" class="el_package">com.example.personalfinance.mapper</a> &gt; <span class="el_source">DtoMapper.java</span></div><h1>DtoMapper.java</h1><pre class="source lang-java linenums">package com.example.personalfinance.mapper;
+
+import com.example.personalfinance.domain.account.Account;
+import com.example.personalfinance.domain.accounting.JournalEntry;
+import com.example.personalfinance.domain.bond.Bond;
+import com.example.personalfinance.domain.liability.Liability;
+import com.example.personalfinance.domain.portfolio.LotConsumption;
+import com.example.personalfinance.domain.portfolio.StockLot;
+import com.example.personalfinance.domain.transaction.Transaction;
+import com.example.personalfinance.domain.user.User;
+import com.example.personalfinance.dto.response.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/** Entity → DTO conversions. Entities are never exposed through the API. */
+public final class DtoMapper {
+
+    private DtoMapper() {}
+
+    public static UserResponse user(User u) {
+<span class="fc" id="L22">        return new UserResponse(u.getId(), u.getEmail(), u.getFullName(), u.getBaseCurrency(), u.getCostBasisMethod());</span>
+    }
+
+    public static AccountResponse account(Account a, BigDecimal balance) {
+<span class="fc" id="L26">        return new AccountResponse(a.getId(), a.getName(), a.getCategory(), a.getCurrency(), a.getInstitution(),</span>
+<span class="fc" id="L27">                a.getLedgerAccount().getCode(), balance, a.isActive());</span>
+    }
+
+    public static LiabilityResponse liability(Liability l, BigDecimal outstanding) {
+<span class="fc" id="L31">        return new LiabilityResponse(l.getId(), l.getName(), l.getCreditor(), l.getLiabilityType(), l.getCurrency(), l.getInterestRate(),</span>
+<span class="fc" id="L32">                l.getTenorMonths(), l.getInstallment(), l.getDueDate(), l.getLedgerAccount().getCode(), outstanding,</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">                outstanding.signum() &gt; 0 ? &quot;ACTIVE&quot; : &quot;PAID_OFF&quot;);</span>
+    }
+
+    public static TransactionResponse transaction(Transaction t) {
+<span class="fc" id="L37">        return new TransactionResponse(t.getId(), t.getTransactionDate(), t.getType(), t.getType().cashFlowCategory(),</span>
+<span class="fc" id="L38">                t.getAccount().getId(), t.getAccount().getName(),</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                t.getDestinationAccount() == null ? null : t.getDestinationAccount().getId(),</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">                t.getDestinationAccount() == null ? null : t.getDestinationAccount().getName(),</span>
+<span class="fc bfc" id="L41" title="All 4 branches covered.">                t.getCategory() == null ? null : t.getCategory().getId(), t.getCategory() == null ? null : t.getCategory().getName(),</span>
+<span class="fc bfc" id="L42" title="All 4 branches covered.">                t.getAsset() == null ? null : t.getAsset().getId(), t.getAsset() == null ? null : t.getAsset().getCode(),</span>
+<span class="fc bfc" id="L43" title="All 4 branches covered.">                t.getLiability() == null ? null : t.getLiability().getId(), t.getLiability() == null ? null : t.getLiability().getName(),</span>
+<span class="fc" id="L44">                t.getQuantity(), t.getQuantityUnit(), t.getUnitPrice(), t.getGrossAmount(), t.getAdminFee(), t.getBrokerFee(), t.getLevy(),</span>
+<span class="fc" id="L45">                t.getTax(), t.getInterestAmount(), t.getNetAmount(), t.getCostBasis(), t.getRealizedPl(), t.getCurrency(), t.getExchangeRate(),</span>
+<span class="fc" id="L46">                t.getBaseCurrency(), t.getBaseAmount(), t.getReference(), t.getDescription(), t.getStatus());</span>
+    }
+
+    public static JournalEntryResponse entry(JournalEntry e) {
+<span class="fc" id="L50">        return new JournalEntryResponse(e.getLedgerAccount().getCode(), e.getLedgerAccount().getName(), e.getDebit(), e.getCredit(), e.getMemo());</span>
+    }
+
+    public static StockLotResponse lot(StockLot l) {
+<span class="fc" id="L54">        return new StockLotResponse(l.getId(), l.getAsset().getId(), l.getAsset().getCode(), l.getTransaction().getId(), l.getPurchaseDate(),</span>
+<span class="fc" id="L55">                l.getQuantity(), l.getRemainingQuantity(), l.unitCost(), l.getTotalCost(), l.getRemainingCost(), l.getStatus());</span>
+    }
+
+    public static LotConsumptionResponse consumption(LotConsumption c) {
+<span class="fc" id="L59">        return new LotConsumptionResponse(c.getLot().getId(), c.getLot().getPurchaseDate(), c.getQuantity(), c.getCostBasis());</span>
+    }
+
+    public static BondResponse bond(Bond b, LocalDate today) {
+<span class="fc" id="L63">        return new BondResponse(b.getId(), b.getAsset().getId(), b.getAsset().getCode(), b.getAsset().getName(), b.getIssuer(), b.getBondType(),</span>
+<span class="fc" id="L64">                b.getNominalValue(), b.getCouponRate(), b.getTaxRate(), b.getFrequency(), b.getSettlementDate(), b.getMaturityDate(), b.schedule(today));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

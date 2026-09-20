@@ -1,0 +1,27 @@
+-- V5: indexes for frequently filtered / joined columns (no redundant indexes on UNIQUE columns)
+CREATE INDEX idx_coa_user_type            ON chart_of_accounts (user_id, type);
+CREATE INDEX idx_coa_user_parent          ON chart_of_accounts (user_id, parent_code);
+CREATE INDEX idx_accounts_user            ON accounts (user_id);
+CREATE INDEX idx_assets_user_type         ON assets (user_id, asset_type);
+CREATE INDEX idx_liabilities_user         ON liabilities (user_id);
+CREATE INDEX idx_tx_user_date             ON transactions (user_id, transaction_date DESC, id DESC);
+CREATE INDEX idx_tx_user_type             ON transactions (user_id, transaction_type);
+CREATE INDEX idx_tx_account               ON transactions (account_id);
+CREATE INDEX idx_tx_destination_account   ON transactions (destination_account_id);
+CREATE INDEX idx_tx_asset                 ON transactions (asset_id);
+CREATE INDEX idx_tx_liability             ON transactions (liability_id);
+CREATE INDEX idx_tx_category              ON transactions (category_id);
+CREATE INDEX idx_tx_created_at            ON transactions (created_at);
+CREATE INDEX idx_journals_date            ON journals (journal_date);
+CREATE INDEX idx_entries_journal          ON journal_entries (journal_id);
+CREATE INDEX idx_entries_account          ON journal_entries (ledger_account_id);
+CREATE INDEX idx_lots_user_asset_open     ON stock_lots (user_id, asset_id, purchase_date, id) WHERE remaining_quantity > 0;
+CREATE INDEX idx_lots_asset               ON stock_lots (asset_id);
+CREATE INDEX idx_consumptions_sell        ON lot_consumptions (sell_transaction_id);
+CREATE INDEX idx_consumptions_lot         ON lot_consumptions (lot_id);
+CREATE INDEX idx_bonds_user               ON bonds (user_id, maturity_date);
+CREATE INDEX idx_budgets_user_period      ON budgets (user_id, period_month);
+CREATE INDEX idx_recon_user_date          ON reconciliations (user_id, reconciliation_date DESC);
+CREATE INDEX idx_attachments_transaction  ON attachments (transaction_id);
+CREATE INDEX idx_audit_user_created       ON audit_logs (user_id, created_at DESC);
+CREATE INDEX idx_audit_entity             ON audit_logs (entity_type, entity_id);

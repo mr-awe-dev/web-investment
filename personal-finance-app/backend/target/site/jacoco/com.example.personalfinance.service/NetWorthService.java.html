@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NetWorthService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Personal Finance Backend</a> &gt; <a href="index.source.html" class="el_package">com.example.personalfinance.service</a> &gt; <span class="el_source">NetWorthService.java</span></div><h1>NetWorthService.java</h1><pre class="source lang-java linenums">package com.example.personalfinance.service;
+
+import com.example.personalfinance.domain.accounting.LedgerType;
+import com.example.personalfinance.domain.common.Money;
+import com.example.personalfinance.domain.user.User;
+import com.example.personalfinance.dto.response.BalanceSheetResponse;
+import com.example.personalfinance.dto.response.NetWorthPoint;
+import com.example.personalfinance.repository.JournalEntryRepository;
+import com.example.personalfinance.repository.projection.MonthlyDelta;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+/** Net worth = Assets − Liabilities; history is rebuilt month by month from ledger movements (no stored snapshots). */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class NetWorthService {
+
+    private final JournalEntryRepository entries;
+    private final BalanceSheetService balanceSheet;
+
+    public NetWorthPoint current(User user, LocalDate date) {
+<span class="fc" id="L32">        BalanceSheetResponse bs = balanceSheet.asOf(user, date);</span>
+<span class="fc" id="L33">        return new NetWorthPoint(date, bs.totalAssets(), bs.totalLiabilities(), bs.equity());</span>
+    }
+
+    /** One point per month that had ledger activity, dated at month end. */
+    public List&lt;NetWorthPoint&gt; history(User user) {
+<span class="fc" id="L38">        Map&lt;YearMonth, BigDecimal[]&gt; byMonth = new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (MonthlyDelta d : entries.monthlyDeltas(user.getId())) {</span>
+<span class="fc" id="L40">            BigDecimal[] acc = byMonth.computeIfAbsent(YearMonth.of(d.year(), d.month()), k -&gt; new BigDecimal[]{Money.ZERO, Money.ZERO});</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (d.type() == LedgerType.ASSET) acc[0] = acc[0].add(d.amount());</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (d.type() == LedgerType.LIABILITY) acc[1] = acc[1].subtract(d.amount());</span>
+<span class="fc" id="L43">        }</span>
+<span class="fc" id="L44">        List&lt;NetWorthPoint&gt; points = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L45">        BigDecimal assets = Money.ZERO, liabilities = Money.ZERO;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (Map.Entry&lt;YearMonth, BigDecimal[]&gt; e : byMonth.entrySet()) {</span>
+<span class="fc" id="L47">            assets = assets.add(e.getValue()[0]);</span>
+<span class="fc" id="L48">            liabilities = liabilities.add(e.getValue()[1]);</span>
+<span class="fc" id="L49">            points.add(new NetWorthPoint(e.getKey().atEndOfMonth(), assets, liabilities, assets.subtract(liabilities)));</span>
+<span class="fc" id="L50">        }</span>
+<span class="fc" id="L51">        return points;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
