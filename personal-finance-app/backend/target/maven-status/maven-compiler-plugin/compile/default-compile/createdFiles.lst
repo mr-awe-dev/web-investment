@@ -128,5 +128,6 @@ com\example\personalfinance\repository\BondRepository.class
 com\example\personalfinance\dto\request\BudgetRequest.class
 com\example\personalfinance\dto\response\PortfolioResponse.class
 com\example\personalfinance\dto\request\SettingsRequest.class
+com\example\personalfinance\config\OpenApiConfig.class
 com\example\personalfinance\domain\liability\Liability.class
 com\example\personalfinance\service\TransactionService.class

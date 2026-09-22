@@ -44,7 +44,7 @@ TransactionController → TransactionService → PortfolioService (lot) → Acco
 ## Menjalankan
 
 ```bash
-cp .env.example .env
+cp application.properties.example application.properties
 docker compose up --build            # db :5432 · backend :8080 · frontend :5173
 # atau lokal
 docker compose up -d db
