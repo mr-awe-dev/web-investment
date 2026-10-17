@@ -34,6 +34,7 @@ public class BondLiabilityController {
     @GetMapping("/bonds")
     @Operation(summary = "List bonds", description = "Retrieve all bonds",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -43,7 +44,7 @@ responses = {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create bond", description = "Create a new bond with coupon schedule",
 responses = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", useReturnTypeSchema = true, description = "Resource created successfully",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
@@ -57,6 +58,7 @@ responses = {
     @GetMapping("/bonds/coupons")
     @Operation(summary = "List upcoming coupons", description = "Retrieve upcoming coupon payments",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -65,6 +67,7 @@ responses = {
     @GetMapping("/bonds/coupons/history")
     @Operation(summary = "Coupon payment history", description = "Retrieve coupon payment transaction history",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -75,6 +78,7 @@ responses = {
     @GetMapping("/liabilities")
     @Operation(summary = "List liabilities", description = "Retrieve all liabilities",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -84,7 +88,7 @@ responses = {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create liability", description = "Create a new liability",
 responses = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", useReturnTypeSchema = true, description = "Resource created successfully",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),

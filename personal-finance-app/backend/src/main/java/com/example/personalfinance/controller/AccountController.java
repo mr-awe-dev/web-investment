@@ -32,6 +32,7 @@ public class AccountController {
     @GetMapping("/accounts")
     @Operation(summary = "List accounts", description = "Retrieve all user accounts",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -41,7 +42,7 @@ responses = {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create account", description = "Create a new money account",
 responses = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", useReturnTypeSchema = true, description = "Resource created successfully",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
@@ -55,6 +56,7 @@ responses = {
     @GetMapping("/accounts/{id}")
     @Operation(summary = "Get account by ID", description = "Retrieve a specific account by ID",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Resource not found or not owned by the caller (NOT_FOUND)",
@@ -65,6 +67,7 @@ responses = {
     @PutMapping("/accounts/{id}")
     @Operation(summary = "Update account", description = "Update an existing account",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
@@ -79,6 +82,7 @@ responses = {
     @GetMapping("/chart-of-accounts")
     @Operation(summary = "Get chart of accounts", description = "Retrieve the chart of accounts for the user",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })

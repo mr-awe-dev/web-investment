@@ -35,6 +35,7 @@ public class ReportController {
     @GetMapping("/dashboard")
     @Operation(summary = "Get dashboard", description = "Retrieve dashboard summary",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -43,6 +44,7 @@ responses = {
     @GetMapping("/reports/balance-sheet")
     @Operation(summary = "Balance sheet report", description = "Retrieve balance sheet as of a specific date",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
@@ -56,6 +58,7 @@ responses = {
     @GetMapping("/reports/income-expense")
     @Operation(summary = "Income and expense report", description = "Retrieve income and expense statement for a date range",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
@@ -70,6 +73,7 @@ responses = {
     @GetMapping("/reports/cash-flow")
     @Operation(summary = "Cash flow report", description = "Retrieve cash flow statement for a date range",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
@@ -84,6 +88,7 @@ responses = {
     @GetMapping("/reports/investment-income")
     @Operation(summary = "Investment income report", description = "Retrieve investment income statement for a date range",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
@@ -98,6 +103,7 @@ responses = {
     @GetMapping("/reports/net-worth")
     @Operation(summary = "Net worth history", description = "Retrieve net worth history over time",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -106,6 +112,7 @@ responses = {
     @GetMapping("/reports/net-worth/current")
     @Operation(summary = "Current net worth", description = "Retrieve current net worth as of today",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })
@@ -114,6 +121,7 @@ responses = {
     @GetMapping("/reports/portfolio-performance")
     @Operation(summary = "Portfolio performance report", description = "Retrieve portfolio performance summary",
 responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
         })

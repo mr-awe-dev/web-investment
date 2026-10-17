@@ -1,13 +1,13 @@
 # Checklist API Documentation — Sisa Utang & Skala Perubahan Besar
 
-Status per **2026-10-17**. Berkas ini dibuat setelah Sprint dokumentasi API (3 commit `[DEV]`) diverifikasi runtime.
+Status per **2026-10-17**. Berkas ini dibuat setelah Sprint dokumentasi API (3 commit `[DEV]`) diverifikasi runtime, lalu diperbarui setelah audit lanjutan.
 
 > Dokumen ini **berbeda** dari `../../requirement/Fitur-yang-belum-ada.md` (fitur produk).
 > Ini khusus kualitas & pemeliharaan lapisan dokumentasi API.
 
 ---
 
-## 0. Ringkas posisi sekarang (terverifikasi runtime)
+## 0. Ringkas posisi sekarang (sudah diverifikasi runtime)
 
 | Item | Status | Bukti |
 |---|---|---|
@@ -15,37 +15,73 @@ Status per **2026-10-17**. Berkas ini dibuat setelah Sprint dokumentasi API (3 c
 | OpenAPI JSON | ✅ | `/v3/api-docs` → 200, ±42 KB |
 | Coverage `@Tag` | ✅ | 7/7 controller |
 | Coverage `@Operation` | ✅ | 46/46 operasi |
-| Coverage error response | ✅ | 0 operasi tanpa kode error |
+| Coverage kode error | ✅ | 46/46 punya response sukses + error |
+| Schema response sukses | ✅ | 46/46 punya schema (via `useReturnTypeSchema`) |
 | Security scheme | ✅ | `bearerAuth` (JWT), tombol Authorize aktif |
-| Swagger dimatikan di prod | ⚠️ | belum diverifikasi runtime (lihat 1.1) |
+| `/api/**` tetap tertutup | ✅ | `GET /api/accounts` tanpa token → **401** |
+| `@SecurityRequirements` | ✅ | register/login punya `security: []`, 44 operasi lain warisi global |
+| Error codes nyata | ✅ | `GET /api/accounts/99999999` → 404, body invalid → 400 |
+| CSV export | ✅ | 200, `Content-Type: text/csv`, schema `text/csv: string` |
+| Kontrak frontend vs spec | ✅ | **0** path frontend hilang dari spec (tanpa drift) |
+| Swagger dimatikan di prod | ⚠️ |_docs tidak tersaji_, tapi balas **500** bukan 404 (lihat 1.1) |
 
 ---
 
 ## 1. Utang yang masih terbuka
 
-### 1.1. Verifikasi runtime untuk profile `prod` — PRIORITAS TINGGI
-- [ ] Jalankan dengan `SPRING_PROFILES_ACTIVE=prod`, pastikan `/v3/api-docs` **404** dan `/swagger-ui/index.html` tidak tersaji
-- [ ] Pastikan tidak ada kebocoran: `curl -i http://localhost:8080/v3/api-docs` → bukan 200
-- [ ] Konfirmasi `application-prod.yml` (`springdoc.api-docs.enabled: false`) benar-benar dibaca, bukan hanya ada di file
-- [ ] **Risiko:** kalau ternyata tidak aktif, seluruh surface API publik terekspos di produksi
+### 1.1. Path yang tidak ada membalas 500, bukan 404
+**Sudah diuji.** Ditemukan saat memverifikasi profile `prod`.
+
+Di profile `prod`, springdoc dinonaktifkan, jadi permintaannya jatuh ke static-resource handler Spring dan melempar `NoResourceFoundException`. Handler global project menelan semua exception jadi 500:
+
+```
+org.springframework.web.servlet.resource.NoResourceFoundException: No static resource swagger-ui.html.
+```
+
+Hasil di profile `prod`:
+
+| Path | HTTP | Catatan |
+|---|---|---|
+| `/v3/api-docs` | 500 | seharusnya 404 — spec tidak bocor |
+| `/swagger-ui/index.html` | 500 | seharusnya 404 |
+| `/swagger-ui.html` | 500 | seharusnya 404 |
+| `/api/accounts` | 401 | API tetap aman ✅ |
+
+Baris balasannya `{success:false, message:"Terjadi kesalahan internal", code:"INTERNAL_ERROR"}` — jadi **tidak ada kebocoran data maupun stack trace**. Aman, tapi statusnya salah secara semantik REST.
+
+Cakupannya sempit: hanya path yang lolos security (daftar `permitAll`) dan tidak resolve. Path di bawah `/api/**` yang tidak dikenal tetap **401** karena security menolak lebih dulu — justru itu perilaku yang benar (tidak membocorkan info).
+
+Perbaikan yang frugal — tambah satu handler di `GlobalExceptionHandler`:
+```java
+@ExceptionHandler(NoResourceFoundException.class)
+public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.error("NOT_FOUND", "Endpoint tidak ditemukan"));
+}
+```
+- [ ] Tambahkan handler `NoResourceFoundException` (dan `NoHandlerFoundException` bila relevan)
+- [ ] Verifikasi: `/swagger-ui.html` di profile prod → **404**, bukan 500
+- [ ] **CATATAN:** ini mengubah perilaku API (500 → 404) untuk path tak dikenal. Perlu disetujui karena di luar scope "dokumentasi saja"
+- [ ] Kekelemuahan: kode 500 di produksi bisa membingungkan monitoring dan konsumen yang mengira endpoint-nya error server
 
 ### 1.2. Schema error masih generik
 - [ ] Kalau butuh detail field-level, buat DTO error terpisah, contoh `ValidationErrorResponse` (daftar field + pesan), `NotFoundErrorResponse`, `ConflictErrorResponse`
 - [ ] Ganti `@Schema(implementation = ApiResponse.class)` pada `@ApiResponse` error dengan DTO spesifik
-- [ ] **Trade-off:** menambah 3–4 file DTO. Hanya lakukan kalau konsumen API benar-benar butuh detail. Error envelope yang sekarang sudah jujur & konsisten.
+- [ ] **Trade-off:** menambah 3–4 file DTO. Hanya lakukan kalau konsumen API benar-benar butuh detail. Error envelope yang sekarang sudah jujur & konsisten
 
 ### 1.3. Tidak ada regression test untuk dokumentasi
 - [ ] Tambah test MockMvc: `GET /v3/api-docs` → 200
+- [ ] Tambah test MockMvc: **setiap operasi punya minimal satu response 2xx** - inilah regresi yang harus dicegah, lihat §2.5
 - [ ] Tambah test MockMvc: `GET /swagger-ui.html` → bukan 401 (menjaga fix `SecurityConfig`)
-- [ ] Tambah test MockMvc: `POST /api/auth/login` → **tidak** punya security requirement (menjaga `@SecurityRequirements`)
-- [ ] Test otomatis: setiap operasi wajib punya minimal satu kode error
+- [ ] Tambah test MockMvc: `GET /api/accounts` tanpa token → 401 (menjaga agar `/api/**` tidak ikut terbuka)
+- [ ] Tambah test MockMvc: `POST /api/auth/login` punya `security: []` (menjaga `@SecurityRequirements`)
 - [ ] Semua test ini bisa jalan di profile `test` (H2 in-memory, tanpa butuh PostgreSQL/Docker)
 
 ### 1.4. Tidak ada CI sama sekali
 - [ ] Tidak ada `.github/workflows/` — semua verifikasi manual
 - [ ] Minimal: workflow `mvn -o test` + gate JaCoCo 100% line & branch
-- [ ] Tambahkan: `mvn compile` gating + smoke test `/v3/api-docs`
-- [ ] Opsional: deteksi drift dokumentasi (compare hasil generate vs committed snapshot)
+- [ ] Tambahkan: smoke test `/v3/api-docs` + cek tidak ada operasi tanpa response sukses
+- [ ] Opsional: deteksi drift dokumentasi (bandingkan hasil generate vs snapshot yang di-commit)
 
 ### 1.5. Docker image basi tanpa peringatan
 - [ ] `docker compose up` **tidak** rebuild image — sudah kejadian sekali (image 25 hari, sumber 1 hari)
@@ -57,17 +93,25 @@ Status per **2026-10-17**. Berkas ini dibuat setelah Sprint dokumentasi API (3 c
 - [ ] Dokumentasikan bahwa Spring Boot **tidak** membaca `.env` otomatis — env var wajib di-set di shell kalau menjalankan backend tanpa Docker
 - [ ] Jelaskan urutan: `cp .env.example .env` (sudah ada template)
 
-### 1.7. Warisan platform Emergent
+### 1.7. Belum diuji (sisa)
+- [ ] Swagger UI di browser sungguhan — baru diverifikasi lewat HTTP, belum pernah diklik Authorize lalu menjalankan endpoint dari UI
+- [ ] Menjalankan backend **tanpa** Docker (`mvn spring-boot:run`) — credential PostgreSQL lokal tidak cocok dengan isi `.env`
+- [ ] Token kedaluwarsa / tidak valid (yang diuji baru token **absen**)
+- [ ] `409 EMAIL_EXISTS`, `500 UNBALANCED_JOURNAL`, dan `400 INSUFFICIENT_STOCK` belum dipicu langsung
+- [ ] Perilaku CORS dari origin berbeda (preflight) belum diuji
+- [ ] Frontend end-to-end terhadap spec — baru dicek kesamaan path, belum ada uji kontrak otomatis
+
+### 1.8. Warisan platform Emergent
+- [x] `memory/api-documentation-prompt.md` — sudah di-commit sebagai spesifikasi
 - [ ] `test_result.md` masih berisi scaffold protokol `main_agent`/`testing_agent` — sudah diputuskan **dipertahankan**, tapi tidak jelas gunanya bagi developer
-- [ ] `memory/api-documentation-prompt.md` masih untracked — putuskan: commit sebagai spesifikasi, atau pindahkan ke arsip
 
 ---
 
 ## 2. Sebelum perubahan skala besar
 
-### 2.1. Wajibkun dampak dokumentasi
-- [ ] Endpoint baru/w berubah → wajib `@Operation` (summary + description) + `@ApiResponses` untuk kode error nyata
-- [ ] Error code baru → catat di tabel ini, jangan hanya muncul di log
+### 2.1. Wajibkan dampak dokumentasi
+- [ ] Endpoint baru/berubah → wajib `@Operation` (summary + description) + response sukses + `@ApiResponses` untuk kode error nyata
+- [ ] Error code baru → catat di sini, jangan hanya muncul di log
 - [ ] Perubahan response shape → `ApiResponse` record berubah → impacted **semua** 46 operasi
 
 ### 2.2. Kunci kontrak API
@@ -83,10 +127,33 @@ Dokumentasi harus tetap konsisten dengan aturan akuntansi berikut (sumber: `../.
 - [ ] Jumlah lot tidak boleh minus (`INSUFFICIENT_STOCK`)
 - [ ] User isolation — 404, bukan 403, untuk resource milik user lain (info leak)
 
-### 2.4. Risiko teknis yang belum teratasi
+### 2.4. Risiko teknis yang sudah ditemukan
 - [ ] `ApiResponse` bentrok nama dengan anotasi swagger → **harus pakai FQN** `io.swagger.v3.oas.annotations.responses.ApiResponse`. Jangan ganti ke import biasa, build akan gagal dengan 96 error
-- [ ] springdoc hanya membaca `responses` dari annotation `@Operation` langsung — **meta-annotation/composed annotation TIDAK akan terbaca** (sudah diverifikasi dari source springdoc 2.5.0)
-- [ ] Nama `@Operation` bentrok dengan DTO bila ada DTO bernama sama → suffix `Response`
+- [ ] springdoc hanya membaca `responses` dari annotation `@Operation` langsung — **meta-annotation/composed annotation TIDAK akan terbaca** (diverifikasi dari source springdoc)
+- [ ] Nama `@Operation`/`@ApiResponse` bentrok dengan DTO bila ada DTO bernama sama → suffix `Response`
+
+### 2.5. ⚠️ WAJIB INGAT: `@Operation(responses = ...)` mematikan response sukses otomatis
+Ini **regresi nyata yang sudah terjadi** dan diperbaiki. Jangan diulang.
+
+Di `GenericResponseService` (springdoc):
+```java
+if (!CollectionUtils.isEmpty(apiResponsesOp) && apiResponsesOp.size() > genericMapResponse.size()) {
+    // ... tidak menambah response sukses otomatis
+} else {
+    // baru di sini sukses otomatis ditambahkan
+}
+```
+
+Artinya: begitu `@Operation` diisi `responses` eksplisit, springdoc **berhenti meng-generate 200/201**. Akibatnya 35 dari 46 operasi kehilangan response sukses di Swagger UI. Endpoint `@ResponseStatus(CREATED)` masih aman karena ditangani jalur terpisah.
+
+**Aturan:** setiap operasi **wajib** punya entry sukses eksplisit dengan `useReturnTypeSchema = true`:
+```java
+@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", useReturnTypeSchema = true),
+```
+`useReturnTypeSchema = true` membuat schema diturunkan dari return type (mis. `ApiResponseListAccountResponse`), jadi tidak perlu menulis schema generik manual.
+
+- [ ] Terapkan pola ini di setiap operasi baru
+- [ ] Tambahkan test (lihat 1.3) agar regresi ini tidak bisa lolos lagi
 
 ---
 
@@ -94,12 +161,13 @@ Dokumentasi harus tetap konsisten dengan aturan akuntansi berikut (sumber: `../.
 
 | Prioritas | Item | Estimasi |
 |---|---|---|
-| 1 | 1.1 verifikasi profile prod | 15 menit |
+| 1 | 1.1 guard `@ConditionalOnProperty` → 404 bersih | 15 menit |
 | 2 | 1.3 regression test MockMvc | 1–2 jam |
 | 3 | 1.6 sinkronkan README | 15 menit |
 | 4 | 1.4 CI dasar | 2–3 jam |
-| 5 | 1.2 DTO error spesifik | 3–4 jam (opsional) |
-| 6 | 2.2 versioning + contract test | 1–2 hari (sebelum integrator) |
+| 5 | 1.7 uji manual sisanya | 1 jam |
+| 6 | 1.2 DTO error spesifik | 3–4 jam (opsional) |
+| 7 | 2.2 versioning + contract test | 1–2 hari (sebelum integrator) |
 
 ---
 
@@ -112,6 +180,7 @@ docker compose logs -f backend            # tunggu "Started PersonalFinanceAppli
 
 curl -o /dev/null -w "%{http_code}\n" http://localhost:8080/v3/api-docs        # HARUS 200
 curl -o /dev/null -w "%{http_code}\n" http://localhost:8080/swagger-ui.html    # HARUS 302 (bukan 401!)
+curl -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/accounts       # HARUS 401 (API tetap tertutup)
 ```
 
 Lalu buka `http://localhost:8080/swagger-ui.html`.
@@ -119,6 +188,17 @@ Lalu buka `http://localhost:8080/swagger-ui.html`.
 Untuk mengecek spec tanpa browser:
 ```bash
 curl -s http://localhost:8080/v3/api-docs | python -c "import json,sys; d=json.load(sys.stdin); print(len(d['paths']),'paths')"
+```
+
+Untuk memastikan tidak ada operasi yang kehilangan response sukses (regresi §2.5):
+```bash
+curl -s http://localhost:8080/v3/api-docs | python -c "
+import json,sys
+d=json.load(sys.stdin)
+bad=[(m.upper(),p) for p,v in d['paths'].items() for m in v
+     if m in ('get','post','put','delete','patch')
+     and not any(c.startswith('2') for c in v[m]['responses'])]
+print('tanpa response sukses:',len(bad)); [print(' ',m,p) for m,p in bad]"
 ```
 
 Stop: `docker compose down`
