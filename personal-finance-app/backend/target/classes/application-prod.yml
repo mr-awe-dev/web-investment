@@ -1,6 +1,0 @@
-logging:
-  level:
-    root: WARN
-    com.example.personalfinance: INFO
-app:
-  seed-demo-data: false

@@ -6,13 +6,12 @@ transaction-driven double-entry accounting, FIFO/Average/Specific lots, reports,
 practice, best performance, best in-code documentation and 100% unit-test coverage for the backend, without wasting tokens.
 
 ## User choices
-- Generate Java/Spring Boot + SQL as files (environment cannot host Java/Postgres for the platform preview; a JDK 21 +
-  Maven toolchain was installed under /root/tools to compile, test and smoke-run it).
+- Generate Java/Spring Boot + SQL as files.
 - Scope: core (auth, CoA, accounts, all transaction types, accounting engine, lots, reports, dashboard, seed) +
   budget, bonds/coupon schedule, reconciliation, CSV export. Frontend as complete as possible. UI in Bahasa Indonesia.
 
 ## Architecture (implemented 2026-06)
-`/app/personal-finance-app/` — backend (Spring Boot 3.3.5, Java 21, JPA, Security/JWT, Flyway V1–V5, JaCoCo gate
+`personal-finance-app/` — backend (Spring Boot 3.3.5, Java 21, JPA, Security/JWT, Flyway V1–V5, JaCoCo gate
 100% line + branch, 25 tests on H2), frontend (Vite 5, React 18, TS strict, Tailwind, Router, TanStack Query, RHF+Zod,
 Recharts, Lucide; 14 routes), database (schema.sql, indexes.sql, seed.sql, migrations/, README), docker-compose,
 .env.example, shared/README.md, root README.md.
