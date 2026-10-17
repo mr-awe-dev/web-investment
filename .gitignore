@@ -31,7 +31,9 @@ dist/
 dist
 
 # Environment files (comprehensive coverage)
-
+.env
+.env.*
+!.env.example
 *token.json*
 *credentials.json*
 
@@ -80,3 +82,6 @@ memory/test_credentials.md
 
 # Mobile development
 android-sdk/
+
+# Knowledge graph output
+graphify-out/
