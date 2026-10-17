@@ -28,6 +28,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    /** springdoc's UI assets, the bare /swagger-ui.html redirect entry point, and the OpenAPI JSON. */
+    private static final String[] DOCS_PATHS = {
+            "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**"
+    };
+
     private final JwtAuthenticationFilter jwtFilter;
 
     @Value("${app.cors.allowed-origins}")
@@ -42,7 +47,7 @@ public class SecurityConfig {
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(DOCS_PATHS).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

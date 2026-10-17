@@ -4,3 +4,9 @@ logging:
     com.example.personalfinance: INFO
 app:
   seed-demo-data: false
+springdoc:
+  # Keep the OpenAPI spec and Swagger UI off in production so neither is publicly served.
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

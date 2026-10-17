@@ -12,6 +12,8 @@ import com.example.personalfinance.service.PortfolioService;
 import com.example.personalfinance.service.ReportService;
 import com.example.personalfinance.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,69 +36,145 @@ public class PortfolioController {
     private final ReportService reports;
 
     @GetMapping("/assets")
-    @Operation(summary = "List assets", description = "Retrieve all investment assets")
+    @Operation(summary = "List assets", description = "Retrieve all investment assets",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<List<AssetResponse>> assets(@AuthenticationPrincipal UserPrincipal p) { return ApiResponse.ok(assets.list(p.user())); }
 
     @PostMapping("/assets")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create asset", description = "Create a new investment asset")
+    @Operation(summary = "Create asset", description = "Create a new investment asset",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<AssetResponse> createAsset(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody AssetRequest req) {
         return ApiResponse.ok(assets.create(p.user(), req));
     }
 
     @GetMapping("/assets/{id}")
-    @Operation(summary = "Get asset by ID", description = "Retrieve a specific asset by ID")
+    @Operation(summary = "Get asset by ID", description = "Retrieve a specific asset by ID",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Resource not found or not owned by the caller (NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<AssetResponse> asset(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id) { return ApiResponse.ok(assets.get(p.user(), id)); }
 
     @PutMapping("/assets/{id}/price")
-    @Operation(summary = "Update asset price", description = "Update the current price of an asset")
+    @Operation(summary = "Update asset price", description = "Update the current price of an asset",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Resource not found or not owned by the caller (NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<AssetResponse> price(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id, @Valid @RequestBody PriceUpdateRequest req) {
         return ApiResponse.ok(assets.updatePrice(p.user(), id, req));
     }
 
     @GetMapping("/portfolio")
-    @Operation(summary = "Get portfolio summary", description = "Retrieve complete portfolio summary")
+    @Operation(summary = "Get portfolio summary", description = "Retrieve complete portfolio summary",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<PortfolioResponse> portfolio(@AuthenticationPrincipal UserPrincipal p) { return ApiResponse.ok(portfolio.portfolio(p.user())); }
 
     @GetMapping("/portfolio/positions")
-    @Operation(summary = "Get portfolio positions", description = "Retrieve all portfolio positions")
+    @Operation(summary = "Get portfolio positions", description = "Retrieve all portfolio positions",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<List<AssetResponse>> positions(@AuthenticationPrincipal UserPrincipal p) { return ApiResponse.ok(portfolio.positions(p.user(), true)); }
 
     @GetMapping("/portfolio/lots")
-    @Operation(summary = "Get portfolio lots", description = "Retrieve stock lots, optionally filtered by asset")
+    @Operation(summary = "Get portfolio lots", description = "Retrieve stock lots, optionally filtered by asset",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<List<StockLotResponse>> lots(@AuthenticationPrincipal UserPrincipal p, @RequestParam(required = false) Long assetId) {
         return ApiResponse.ok(portfolio.lots(p.user(), assetId));
     }
 
     @GetMapping("/stocks")
-    @Operation(summary = "List stocks", description = "Retrieve all stock assets")
+    @Operation(summary = "List stocks", description = "Retrieve all stock assets",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<List<AssetResponse>> stocks(@AuthenticationPrincipal UserPrincipal p) {
         return ApiResponse.ok(assets.list(p.user()).stream().filter(a -> a.assetType() == com.example.personalfinance.domain.asset.AssetType.STOCK).toList());
     }
 
     @PostMapping("/stocks/buy")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Buy stock", description = "Record a stock buy transaction")
+    @Operation(summary = "Buy stock", description = "Record a stock buy transaction",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error (INTERNAL_ERROR)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<TransactionDetailResponse> buy(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody TransactionRequest req) {
         return ApiResponse.ok(transactions.create(p.user(), typed(req, TransactionType.BUY_INVESTMENT)));
     }
 
     @PostMapping("/stocks/sell")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Sell stock", description = "Record a stock sell transaction")
+    @Operation(summary = "Sell stock", description = "Record a stock sell transaction",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or business rule violated (e.g. INSUFFICIENT_STOCK)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error (INTERNAL_ERROR)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<TransactionDetailResponse> sell(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody TransactionRequest req) {
         return ApiResponse.ok(transactions.create(p.user(), typed(req, TransactionType.SELL_INVESTMENT)));
     }
 
     @GetMapping("/dividends")
-    @Operation(summary = "List dividends", description = "Retrieve dividend transaction history")
+    @Operation(summary = "List dividends", description = "Retrieve dividend transaction history",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<List<TransactionResponse>> dividends(@AuthenticationPrincipal UserPrincipal p) {
         return ApiResponse.ok(reports.history(p.user(), TransactionType.DIVIDEND));
     }
 
     @PostMapping("/dividends")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Record dividend", description = "Record a dividend transaction")
+    @Operation(summary = "Record dividend", description = "Record a dividend transaction",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error (INTERNAL_ERROR)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<TransactionDetailResponse> dividend(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody TransactionRequest req) {
         return ApiResponse.ok(transactions.create(p.user(), typed(req, TransactionType.DIVIDEND)));
     }

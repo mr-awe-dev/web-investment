@@ -10,6 +10,8 @@ import com.example.personalfinance.security.UserPrincipal;
 import com.example.personalfinance.service.ReportService;
 import com.example.personalfinance.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +37,13 @@ public class TransactionController {
     private final ReportService reports;
 
     @GetMapping
-    @Operation(summary = "List transactions", description = "Retrieve paginated transactions with optional filters")
+    @Operation(summary = "List transactions", description = "Retrieve paginated transactions with optional filters",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<PageResponse<TransactionResponse>> list(
             @AuthenticationPrincipal UserPrincipal p,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -51,7 +59,13 @@ public class TransactionController {
     }
 
     @GetMapping(value = "/export", produces = "text/csv")
-    @Operation(summary = "Export transactions to CSV", description = "Export filtered transactions as CSV file")
+    @Operation(summary = "Export transactions to CSV", description = "Export filtered transactions as CSV file",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ResponseEntity<String> export(
             @AuthenticationPrincipal UserPrincipal p,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -67,25 +81,59 @@ public class TransactionController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create transaction", description = "Create a new financial transaction")
+    @Operation(summary = "Create transaction", description = "Create a new financial transaction",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Resource created successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error (INTERNAL_ERROR)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<TransactionDetailResponse> create(@AuthenticationPrincipal UserPrincipal p, @Valid @RequestBody TransactionRequest req) {
         return ApiResponse.ok(transactions.create(p.user(), req));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get transaction by ID", description = "Retrieve a specific transaction by ID")
+    @Operation(summary = "Get transaction by ID", description = "Retrieve a specific transaction by ID",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Resource not found or not owned by the caller (NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<TransactionDetailResponse> get(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id) {
         return ApiResponse.ok(transactions.detail(p.user(), id));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update transaction", description = "Update an existing transaction")
+    @Operation(summary = "Update transaction", description = "Update an existing transaction",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_ERROR) or a business rule was violated",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Resource not found or not owned by the caller (NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error (INTERNAL_ERROR)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<TransactionDetailResponse> update(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id, @Valid @RequestBody TransactionRequest req) {
         return ApiResponse.ok(transactions.update(p.user(), id, req));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete transaction", description = "Delete a transaction by ID")
+    @Operation(summary = "Delete transaction", description = "Delete a transaction by ID",
+responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Missing, invalid or expired bearer token",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Resource not found or not owned by the caller (NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error (INTERNAL_ERROR)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+        })
     public ApiResponse<Void> delete(@AuthenticationPrincipal UserPrincipal p, @PathVariable Long id) {
         transactions.delete(p.user(), id);
         return ApiResponse.ok(null);

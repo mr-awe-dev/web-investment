@@ -83,6 +83,7 @@ GRANT ALL PRIVILEGES ON DATABASE personal_finance TO personal_finance;
 ```bash
 cd personal-finance-app
 docker-compose up
+docker-compose up --build
 ```
 
 ### Manual Setup
@@ -142,3 +143,6 @@ Flyway migrations are located in `backend/src/main/resources/db/migration/`. The
 **How to kill port?**
 - netstat -ano | findstr :8080
 - taskkill /PID 12345 /F
+
+## Swagger UI
+- http://localhost:8080/swagger-ui.html
