@@ -23,46 +23,40 @@ Status per **2026-10-17**. Berkas ini dibuat setelah Sprint dokumentasi API (3 c
 | Error codes nyata | ✅ | `GET /api/accounts/99999999` → 404, body invalid → 400 |
 | CSV export | ✅ | 200, `Content-Type: text/csv`, schema `text/csv: string` |
 | Kontrak frontend vs spec | ✅ | **0** path frontend hilang dari spec (tanpa drift) |
-| Swagger dimatikan di prod | ⚠️ |_docs tidak tersaji_, tapi balas **500** bukan 404 (lihat 1.1) |
+| Client input salah -> 4xx | ✅ | param hilang/tipe salah/body rusak = 400, metode salah = 405, path tak dikenal = 404 |
+| Error internal tetap 500 | ✅ | `Exception` umum tetap jadi `INTERNAL_ERROR` |
+| Swagger dimatikan di prod | ✅ | docs tidak tersaji, `/v3/api-docs` -> 404 bersih |
 
 ---
 
 ## 1. Utang yang masih terbuka
 
-### 1.1. Path yang tidak ada membalas 500, bukan 404
-**Sudah diuji.** Ditemukan saat memverifikasi profile `prod`.
+### 1.1. [SELESAI] Salah input klien dulu dibalas 500 - sudah diperbaiki
+**Ditemukan** saat memverifikasi profile `prod`, **sudah diperbaiki** dan diverifikasi live.
 
-Di profile `prod`, springdoc dinonaktifkan, jadi permintaannya jatuh ke static-resource handler Spring dan melempar `NoResourceFoundException`. Handler global project menelan semua exception jadi 500:
+Kelima exception Spring ini dulu tertelan catch-all `handleGeneric(Exception)` dan dibalas **500**, padahal semuanya adalah salah input klien:
 
-```
-org.springframework.web.servlet.resource.NoResourceFoundException: No static resource swagger-ui.html.
-```
-
-Hasil di profile `prod`:
-
-| Path | HTTP | Catatan |
+| Exception | Contoh | Hasil |
 |---|---|---|
-| `/v3/api-docs` | 500 | seharusnya 404 — spec tidak bocor |
-| `/swagger-ui/index.html` | 500 | seharusnya 404 |
-| `/swagger-ui.html` | 500 | seharusnya 404 |
-| `/api/accounts` | 401 | API tetap aman ✅ |
+| `MissingServletRequestParameterException` | `GET /api/budgets` tanpa `period` | 400 `MISSING_PARAMETER` |
+| `MethodArgumentTypeMismatchException` | `?page=abc`, `?type=BUKAN_ENUM`, `?from=bukan-tanggal` | 400 `INVALID_PARAMETER` |
+| `HttpMessageNotReadableException` | body JSON rusak | 400 `MALFORMED_BODY` |
+| `HttpRequestMethodNotSupportedException` | `DELETE /api/dashboard` | 405 `METHOD_NOT_ALLOWED` |
+| `NoResourceFoundException` | path tak dikenal di area `permitAll` | 404 `NOT_FOUND` |
 
-Baris balasannya `{success:false, message:"Terjadi kesalahan internal", code:"INTERNAL_ERROR"}` — jadi **tidak ada kebocoran data maupun stack trace**. Aman, tapi statusnya salah secara semantik REST.
+Konsekuensi yang pernah nyata: dokumentasi menyebut `GET /api/budgets` mengembalikan **400**, padahal kenyataannya **500**. Spec jadi tidak akurat.
 
-Cakupannya sempit: hanya path yang lolos security (daftar `permitAll`) dan tidak resolve. Path di bawah `/api/**` yang tidak dikenal tetap **401** karena security menolak lebih dulu — justru itu perilaku yang benar (tidak membocorkan info).
+Kini ke-5 exception punya handler sendiri di `GlobalExceptionHandler`, dengan test di `api/ErrorHandlingApiTest` (gate JaCoCo 100% memaksa tiap handler ter-cover).
 
-Perbaikan yang frugal — tambah satu handler di `GlobalExceptionHandler`:
-```java
-@ExceptionHandler(NoResourceFoundException.class)
-public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException ex) {
-    return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(ApiResponse.error("NOT_FOUND", "Endpoint tidak ditemukan"));
-}
-```
-- [ ] Tambahkan handler `NoResourceFoundException` (dan `NoHandlerFoundException` bila relevan)
-- [ ] Verifikasi: `/swagger-ui.html` di profile prod → **404**, bukan 500
-- [ ] **CATATAN:** ini mengubah perilaku API (500 → 404) untuk path tak dikenal. Perlu disetujui karena di luar scope "dokumentasi saja"
-- [ ] Kekelemuahan: kode 500 di produksi bisa membingungkan monitoring dan konsumen yang mengira endpoint-nya error server
+- [x] 5 handler ditambahkan di `GlobalExceptionHandler`
+- [x] 5 test ditambahkan di `api/ErrorHandlingApiTest`
+- [x] Verifikasi live: 400 / 400 / 400 / 405 / 404
+- [x] Dokumentasi jadi akurat **tanpa revisi spec**
+- [ ] Saat menambah endpoint baru, cek apakah ada sumber error input baru yang perlu handler
+
+### Catatan untuk endpoint baru
+
+`NoResourceFoundException` hanya terpicu pada path yang lolos security. Path di bawah `/api/**` yang tidak dikenal tetap dibalas **401** oleh filter chain - itu perilaku yang benar (tidak membocorkan keberadaan endpoint), jadi jangan dikejar jadi 404.
 
 ### 1.2. Schema error masih generik
 - [ ] Kalau butuh detail field-level, buat DTO error terpisah, contoh `ValidationErrorResponse` (daftar field + pesan), `NotFoundErrorResponse`, `ConflictErrorResponse`
