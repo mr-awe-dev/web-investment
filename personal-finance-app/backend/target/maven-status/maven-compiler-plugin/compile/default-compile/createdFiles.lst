@@ -78,6 +78,7 @@ com\example\personalfinance\dto\request\AccountRequest.class
 com\example\personalfinance\domain\accounting\ChartOfAccount.class
 com\example\personalfinance\domain\user\User.class
 com\example\personalfinance\dto\response\JournalEntryResponse.class
+com\example\personalfinance\controller\HealthController.class
 com\example\personalfinance\domain\bond\Bond.class
 com\example\personalfinance\dto\response\DashboardResponse$UpcomingItem.class
 com\example\personalfinance\dto\response\AccountResponse.class
@@ -127,6 +128,8 @@ com\example\personalfinance\dto\response\BalanceSheetResponse.class
 com\example\personalfinance\repository\BondRepository.class
 com\example\personalfinance\dto\request\BudgetRequest.class
 com\example\personalfinance\dto\response\PortfolioResponse.class
+com\example\personalfinance\config\RequestAuditFilter.class
 com\example\personalfinance\dto\request\SettingsRequest.class
+com\example\personalfinance\config\OpenApiConfig.class
 com\example\personalfinance\domain\liability\Liability.class
 com\example\personalfinance\service\TransactionService.class

@@ -1,40 +1,195 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { Scale } from 'lucide-react';
 import { useAccounts, useCreateReconciliation, useReconciliations } from '../api/queries';
-import { Amount, Field, Loading, PageHeader, Panel, Pill, Table } from '../components/ui';
+import {
+  Alert,
+  Amount,
+  ErrorState,
+  Field,
+  Loading,
+  PageHeader,
+  Panel,
+  Pill,
+  Spinner,
+  Stat,
+  Table,
+} from '../components/ui';
 import { fmtDate } from '../lib/format';
+import { useAuth } from '../lib/auth';
+import type { Reconciliation } from '../types/domain';
 
-const STATUS: Record<string, { label: string; tone: 'green' | 'amber' | 'red' }> = { RECONCILED: { label: 'Sesuai', tone: 'green' }, DIFFERENCE_FOUND: { label: 'Ada selisih', tone: 'red' }, PENDING_REVIEW: { label: 'Perlu ditinjau', tone: 'amber' } };
+const STATUS: Record<string, { label: string; tone: 'green' | 'amber' | 'red' }> = {
+  RECONCILED: { label: 'Cocok', tone: 'green' },
+  PENDING_REVIEW: { label: 'Menunggu tinjauan', tone: 'amber' },
+  DIFFERENCE_FOUND: { label: 'Selisih', tone: 'red' },
+};
 
 export default function ReconciliationPage() {
-  const { data = [], isLoading } = useReconciliations();
-  const { data: accounts = [] } = useAccounts();
-  const create = useCreateReconciliation();
-  const [f, setF] = useState({ accountId: '', reconciliationDate: new Date().toISOString().slice(0, 10), actualBalance: '', notes: '' });
-  const selected = accounts.find((a) => a.id === Number(f.accountId));
+  const reconciliations = useReconciliations();
+  const accounts = useAccounts();
+  const reconcile = useCreateReconciliation();
+  const cur = useAuth().user?.baseCurrency ?? 'IDR';
+  const [form, setForm] = useState({ accountId: '', actualBalance: '', notes: '' });
+  const [outcome, setOutcome] = useState<Reconciliation | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  if (reconciliations.isLoading) return <Loading rows={6} />;
+  if (reconciliations.isError) return <ErrorState title="Rekonsiliasi tidak dapat dimuat" onRetry={() => reconciliations.refetch()} />;
+
+  const data = reconciliations.data ?? [];
+  const matched = data.filter((item) => item.status === 'RECONCILED').length;
+  const difference = data.filter((item) => item.status === 'DIFFERENCE_FOUND').length;
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setOutcome(null);
+    try {
+      const created = await reconcile.mutateAsync({
+        accountId: Number(form.accountId),
+        actualBalance: Number(form.actualBalance),
+        notes: form.notes || undefined,
+      });
+      setOutcome(created);
+      setForm({ accountId: '', actualBalance: '', notes: '' });
+      await reconciliations.refetch();
+    } catch (caught) {
+      setError((caught as Error).message);
+    }
+  };
+
   return (
     <>
-      <PageHeader title="Rekonsiliasi" subtitle="Bandingkan saldo buku besar dengan saldo rekening sebenarnya" />
-      <div className="grid lg:grid-cols-3 gap-6">
-        <Panel title="Rekonsiliasi baru">
-          <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); await create.mutateAsync({ ...f, accountId: Number(f.accountId), actualBalance: Number(f.actualBalance), notes: f.notes || undefined }); setF({ ...f, actualBalance: '', notes: '' }); }}>
-            <Field label="Akun"><select className="input" required value={f.accountId} onChange={(e) => setF({ ...f, accountId: e.target.value })}><option value="">— pilih —</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field>
-            {selected && <div className="text-sm text-slate-600">Saldo sistem saat ini: <Amount value={selected.balance} currency={selected.currency} className="font-medium" /></div>}
-            <Field label="Tanggal"><input className="input" type="date" value={f.reconciliationDate} onChange={(e) => setF({ ...f, reconciliationDate: e.target.value })} /></Field>
-            <Field label="Saldo aktual (rekening)"><input className="input num" type="number" step="any" required value={f.actualBalance} onChange={(e) => setF({ ...f, actualBalance: e.target.value })} /></Field>
-            <Field label="Catatan (mis. biaya/dividen belum tercatat)"><input className="input" value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
-            <button className="btn-primary">Bandingkan</button>
-          </form>
-        </Panel>
-        <Panel title="Riwayat" className="lg:col-span-2">
-          {isLoading ? <Loading /> : (
-            <Table rows={data} keyOf={(r) => r.id} cols={[
-              { h: 'Tanggal', cell: (r) => fmtDate(r.reconciliationDate) }, { h: 'Akun', cell: (r) => r.accountName },
-              { h: 'Saldo sistem', right: true, cell: (r) => <Amount value={r.systemBalance} /> }, { h: 'Saldo aktual', right: true, cell: (r) => <Amount value={r.actualBalance} /> },
-              { h: 'Selisih', right: true, cell: (r) => <Amount value={r.difference} signed className="font-medium" /> },
-              { h: 'Status', cell: (r) => <Pill tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Pill> }, { h: 'Catatan', cell: (r) => <span className="text-slate-500">{r.notes ?? ''}</span> },
-            ]} />
-          )}
-        </Panel>
+      <PageHeader
+        eyebrow="Kontrol"
+        title="Rekonsiliasi"
+        subtitle="Saldo buku dibandingkan dengan saldo aktual akun, lalu selisih dicatat ke jurnal penyesuaian."
+      />
+
+      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat label="Total rekonsiliasi" value={String(data.length)} hint="Seluruh riwayat" />
+        <Stat label="Cocok" value={String(matched)} hint={`${data.length - matched} perlu perhatian`} />
+        <Stat label="Selisih ditemukan" value={String(difference)} hint="Sudah disesuaikan" />
+        <Stat
+          label="Terakhir"
+          value={data[0] ? fmtDate(data[0].reconciliationDate) : '–'}
+          hint={data[0]?.accountName ?? 'Belum pernah'}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <Panel title="Rekonsiliasi baru" subtitle="Catat saldo aktual akun">
+            <form className="space-y-4" onSubmit={submit}>
+              <Field label="Akun" required>
+                <select
+                  className="input"
+                  required
+                  value={form.accountId}
+                  onChange={(event) => setForm({ ...form, accountId: event.target.value })}
+                  disabled={accounts.isLoading}
+                >
+                  <option value="">— pilih akun —</option>
+                  {(accounts.data ?? [])
+                    .filter((account) => account.active)
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+              <Field label="Saldo aktual" required>
+                <input
+                  className="input num"
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  required
+                  value={form.actualBalance}
+                  onChange={(event) => setForm({ ...form, actualBalance: event.target.value })}
+                  placeholder="0"
+                />
+              </Field>
+              <Field label="Catatan">
+                <textarea
+                  className="input min-h-20 resize-y"
+                  value={form.notes}
+                  onChange={(event) => setForm({ ...form, notes: event.target.value })}
+                  placeholder="Contoh: saldo rekening koran per akhir bulan"
+                />
+              </Field>
+
+              {error && <Alert tone="error">{error}</Alert>}
+              {outcome && (
+                <Alert tone={outcome.status === 'RECONCILED' ? 'success' : 'info'}>
+                  <strong className="font-medium">{STATUS[outcome.status]?.label ?? outcome.status}.</strong> Saldo buku{' '}
+                  <Amount value={outcome.systemBalance} currency={cur} className="mx-0.5" />, selisih{' '}
+                  <Amount value={outcome.difference} signed currency={cur} className="mx-0.5" />.
+                </Alert>
+              )}
+
+              <button type="submit" className="btn btn-primary w-full" disabled={reconcile.isPending}>
+                {reconcile.isPending ? <Spinner size={15} /> : <Scale size={16} aria-hidden="true" />}
+                Jalankan rekonsiliasi
+              </button>
+              <p className="text-[11px] leading-relaxed text-muted">
+                Selisih di luar nol diposting ke akun penyesuaian agar buku tetap seimbang.
+              </p>
+            </form>
+          </Panel>
+        </div>
+
+        <div className="lg:col-span-2">
+          <Panel title="Riwayat rekonsiliasi" subtitle="Urut dari yang terbaru" flush>
+            <Table
+              rows={data}
+              keyOf={(item) => item.id}
+              sortable
+              caption="Riwayat rekonsiliasi"
+              empty="Belum ada rekonsiliasi"
+              emptyHint="Mulai dengan mencocokkan saldo satu akun di formulir samping."
+              cols={[
+                {
+                  h: 'Tanggal',
+                  cell: (item) => fmtDate(item.reconciliationDate),
+                  sortValue: (item) => item.reconciliationDate,
+                },
+                { h: 'Akun', cell: (item) => <span className="font-medium text-ink">{item.accountName}</span>, sortValue: (item) => item.accountName },
+                { h: 'Saldo buku', right: true, mobile: false, cell: (item) => <Amount value={item.systemBalance} />, sortValue: (item) => Number(item.systemBalance) },
+                { h: 'Saldo aktual', right: true, cell: (item) => <Amount value={item.actualBalance} />, sortValue: (item) => Number(item.actualBalance) },
+                {
+                  h: 'Selisih',
+                  right: true,
+                  cell: (item) => <Amount value={item.difference} signed className="font-medium" />,
+                  sortValue: (item) => Number(item.difference),
+                },
+                {
+                  h: 'Status',
+                  cell: (item) => {
+                    const status = STATUS[item.status] ?? STATUS.PENDING_REVIEW;
+                    return (
+                      <Pill tone={status.tone} dot>
+                        {status.label}
+                      </Pill>
+                    );
+                  },
+                  sortValue: (item) => item.status,
+                },
+              ]}
+            />
+            {data.length > 0 && (
+              <div className="flex items-center justify-between gap-3 border-t border-line px-5 py-3">
+                <span className="text-xs text-muted">Total selisih tercatat</span>
+                <Amount
+                  value={data.reduce((sum, item) => sum + Number(item.difference), 0)}
+                  signed
+                  className="font-semibold"
+                />
+              </div>
+            )}
+          </Panel>
+        </div>
       </div>
     </>
   );

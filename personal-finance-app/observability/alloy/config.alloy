@@ -1,0 +1,70 @@
+// Grafana Alloy collector: Docker logs -> Grafana Cloud Loki,
+// backend actuator metrics -> Grafana Cloud Prometheus.
+// Credentials come from the environment (see .env.example).
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "backend" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "backend"
+    action        = "keep"
+  }
+}
+
+loki.source.docker "backend" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.backend.output
+  labels     = { service = "personal-finance", env = sys.env("APP_ENV") }
+  forward_to = [loki.process.backend.receiver]
+}
+
+loki.process "backend" {
+  stage.json {
+    expressions = {
+      level  = "level",
+      status = "status",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = "level",
+    }
+  }
+
+  forward_to = [loki.write.cloud.receiver]
+}
+
+loki.write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOKI_USER")
+      password = sys.env("GRAFANA_CLOUD_API_TOKEN")
+    }
+  }
+}
+
+prometheus.scrape "backend" {
+  targets         = [{ __address__ = "backend:8081", job = "personal-finance" }]
+  metrics_path    = "/actuator/prometheus"
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.remote_write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROM_USER")
+      password = sys.env("GRAFANA_CLOUD_API_TOKEN")
+    }
+  }
+}

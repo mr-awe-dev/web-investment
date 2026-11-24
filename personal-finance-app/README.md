@@ -57,7 +57,7 @@ Akun demo: **demo@finance.id / Demo1234!** (dibuat oleh `DemoDataSeeder`, atau `
 ## Pengujian & cakupan
 
 ```bash
-cd backend && mvn test               # 24 tes; JaCoCo memaksa 100% line + 100% branch (build gagal jika kurang)
+cd backend && mvn test               # 33 tes; JaCoCo memaksa 100% line + 100% branch (build gagal jika kurang)
 open target/site/jacoco/index.html
 ```
 
@@ -83,6 +83,32 @@ ekspor CSV, dan autentikasi JWT.
 | GET/POST/DELETE | `/api/budgets?period=YYYY-MM` | Anggaran vs realisasi |
 | GET/POST | `/api/reconciliations` | Rekonsiliasi saldo |
 | GET | `/api/dashboard`, `/api/reports/balance-sheet`, `/income-expense`, `/cash-flow`, `/investment-income`, `/net-worth`, `/net-worth/current`, `/portfolio-performance` | Laporan |
+
+## Logging & monitoring (production)
+
+Backend menulis **JSON log ke stdout** untuk profil non-`dev`/`test`, dengan `requestId`, `userId`
+(jika login), `method`, `path`, `status`, dan `durationMs`. Setiap response membawa header
+`X-Request-Id`; kirim header itu saat melapor bug agar log mudah dicari di Grafana Cloud.
+
+| Kebutuhan | Detail |
+|---|---|
+| Log lokal | `docker compose logs -f backend` |
+| Health check publik | `GET /api/health` → `{"success":true,"data":{"status":"UP"},...}` |
+| Metrics internal | `http://backend:8081/actuator/prometheus` (port 8081 tidak dipublish ke host) |
+| Collector | container `alloy` membaca log Docker + scrape metrics, kirim ke Grafana Cloud |
+| Uptime | daftarkan monitor Better Stack ke `/api/health` (interval 3 menit) |
+
+Setup sekali jalan:
+
+1. Buat akun **Grafana Cloud Free**, catat URL/username Loki dan Prometheus, lalu buat access
+   token dengan scope `logs:write` dan `metrics:write`.
+2. Isi variabel `GRAFANA_CLOUD_*` di `.env` (lihat `.env.example`), set `APP_ENV=production` dan
+   `SPRING_PROFILES_ACTIVE=prod` agar backend mengeluarkan JSON log.
+3. Import `observability/grafana/dashboard.json` ke Grafana (pilih datasource Prometheus & Loki).
+4. Buat alert rule: 5xx rate > 1% (5 menit), `level="ERROR"` muncul, p95 latency > 1s, heap > 85%.
+5. Buat uptime monitor di **Better Stack Free** ke `https://<domain>/api/health`, aktifkan alert
+   email/Slack dan status page.
+6. `docker compose up -d --build` lalu cek log masuk di Grafana Cloud Explore.
 
 ## Belum termasuk (backlog)
 

@@ -46,3 +46,13 @@ export const useDeleteBudget = () => useInvalidatingMutation((id: number) => htt
 export const useCreateReconciliation = () => useInvalidatingMutation((b: Record<string, unknown>) => http.post<D.Reconciliation>('/reconciliations', b));
 export const useUpdateSettings = () => useInvalidatingMutation((b: { baseCurrency: string; costBasisMethod: D.CostBasisMethod; fullName: string }) => http.put<D.User>('/auth/settings', b));
 export const exportTransactionsCsv = (f: TxFilter) => http.get<string>('/transactions/export', { ...f });
+
+export const exportReportPdf = (type: string, from?: string, to?: string) => http.get<Blob>('/api/reports/export/pdf', {
+    params: { type, from, to },
+    responseType: 'blob',
+});
+
+export const exportReportXls = (type: string, from?: string, to?: string) => http.get<Blob>('/api/reports/export/xls', {
+    params: { type, from, to },
+    responseType: 'blob',
+});

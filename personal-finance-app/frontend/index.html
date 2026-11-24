@@ -2,8 +2,23 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Finansia – Keuangan & Investasi Pribadi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Finansia — akuntansi keuangan pribadi dan pemantauan investasi berbasis double-entry." />
+    <meta name="theme-color" content="#16251D" />
+    <title>Finansia – Keuangan &amp; Investasi Pribadi</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('pf.theme');
+          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var root = document.documentElement;
+          if (dark) root.classList.add('dark');
+          root.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (error) {
+          /* keep the light default when storage is unavailable */
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://rsms.me/" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
   </head>
